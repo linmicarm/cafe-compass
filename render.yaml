@@ -33,14 +33,6 @@ services:
     runtime: static
     buildCommand: cd client && npm ci && npm run build
     staticPublishPath: client/dist
-    envVars:
-      # Point the client at the deployed API. Set this to the API's
-      # URL after the first deploy (Render fills the host once it exists).
-      - key: VITE_API_BASE
-        fromService:
-          name: cafe-compass-api
-          type: web
-          property: host
     routes:
       # SPA fallback — every path serves index.html so client routing works.
       - type: rewrite
