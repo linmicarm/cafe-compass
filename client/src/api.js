@@ -1,6 +1,13 @@
-// Thin API layer. All calls hit the Express backend via the Vite proxy.
-
-const BASE = '/api';
+// Thin API layer. All calls hit the Express backend.
+// Local dev: VITE_API_BASE is unset, so calls go to '/api' and Vite proxies
+// them to :3000. Production: VITE_API_BASE is the deployed API host/URL.
+function apiBase() {
+  const v = import.meta.env.VITE_API_BASE;
+  if (!v) return '';
+  if (/^https?:\/\//.test(v)) return v;
+  return `https://${v}`;
+}
+const BASE = apiBase() + '/api';
 
 function buildCafeQuery(filters) {
   const params = new URLSearchParams();
