@@ -7,7 +7,7 @@ Built to demonstrate **relational modeling in Postgres**: two many-to-many joins
 > **Stack:** React + Vite · Leaflet · Node.js · Express · PostgreSQL (`pg`)
 > **Scope:** v1 is user-less by design — reviews and collections are global. Accounts + auth are the headline stretch feature (see *If I built it again*).
 
-The front end is a **map-led split view**: a Leaflet map and a filterable café list, linked bidirectionally — hover a card and its pin lifts; hover a pin and its card lifts; click either and the popup opens and the card scrolls into view. On mobile the split collapses to a Map/List toggle.
+The front end is a **list-led layout**: café cards are the hero in a responsive grid, with a story sidebar (intro + filters) on the left and a companion Leaflet map on the right. The map and list are linked bidirectionally — hover a card and its pin lifts; hover a pin and its card lifts; click either and the map pans to that café, opens its popup, and scrolls the card into view. On mobile the layout collapses to a Map/List toggle.
 
 ---
 
@@ -40,6 +40,9 @@ Scaled attributes are Postgres **ENUMs**, not free text, so filtering stays type
 | Scaled attributes | ENUMs | Type-safe filtering; invalid values are rejected at the DB boundary, not in app code. |
 | Avg rating | `VIEW`, not a column | Always live, never denormalized/stale. |
 | Vibe filter | "any-of" via join | Café matches if it has ≥1 requested vibe — the natural UX for tag filtering. |
+| Map tiles | Real OSM, desaturated | Greyed the tiles so the coloured pins carry the eye (the Airbnb pattern) — keeps real geography while letting the pins pop. |
+| Palette | One anchor + neutral tints | Started with five candy pastels + hard outlines everywhere; it read as clashing "80s Memphis." Refined to one rose anchor, restrained outlines on hero elements only, and borderless tinted tags — hierarchy over noise. |
+| Layout | List-led, not map-led | Cards are the artifact worth showing; the map is a companion. Wide card grid, protected map width, story sidebar. |
 
 ---
 
@@ -97,6 +100,19 @@ The Vite dev server proxies `/api` to the Express backend on port 3000, so run t
 
 ---
 
+## Deploy (Render)
+
+All three pieces — Postgres, the Express API, and the static client — are defined in `render.yaml` and deploy together as a Render Blueprint.
+
+1. Push the repo to GitHub.
+2. In Render: **New → Blueprint**, connect the repo. Render reads `render.yaml` and lists the database, API, and web service. Click **Deploy**.
+3. Once the database is live, seed it once from the API service's **Shell** tab: `npm run db:setup` (a psql-free runner that executes `schema.sql` + `seed.sql` through `pg`).
+4. The client reads the API URL from `VITE_API_BASE`, wired automatically in the blueprint.
+
+Notes: the API uses SSL against managed Postgres (`PGSSL=require`), and the client falls back to the Vite proxy locally when `VITE_API_BASE` is unset. Render's free tier spins the API down after inactivity, so the first request after idle takes ~30s to wake — expected for a portfolio demo.
+
+---
+
 ## Problems → Fix → Lesson
 
 **Problem:** Binding an array of user-supplied strings to an enum column (`c.wifi = ANY($1)`) throws a type-mismatch — Postgres won't coerce `text[]` to `wifi_quality[]` implicitly.
@@ -114,6 +130,14 @@ The Vite dev server proxies `/api` to the Express backend on port 3000, so run t
 **Problem:** Map↔list hover/select could have meant two components each owning their own state and drifting out of sync.
 **Fix:** Lifted `hoveredId` and `selectedId` into `App` as the single source of truth; both the card list and the map read and write the same state.
 **Lesson:** Bidirectional UI sync isn't two-way binding — it's one shared state that two views both render from.
+
+**Problem:** Clicking a café blanked the whole app. The selected-popup effect called `ref.openOn(ref._map)`, reaching into a react-leaflet internal (`_map`) that is `undefined` in v5 — so `openOn(undefined)` threw, React unmounted, blank page. A plain build never caught it because it compiles fine and only throws at runtime.
+**Fix:** Stopped poking internals — drive the popup through the public marker API (`marker.openPopup()`) and pan via a small `PanToSelected` child using `useMap()`. Verified with a headless-browser click test asserting no page errors after a card *and* a pin click.
+**Lesson:** Reaching past a library's public API for a private field is a runtime landmine that type-checks and builds clean. When behaviour depends on a library's internals, test the actual interaction in a browser, not just the build.
+
+**Problem:** Accented café names loaded as mojibake (`cafÃ©`) on Windows.
+**Fix:** `SET client_encoding TO 'UTF8';` at the top of `seed.sql`, so psql reads the UTF-8 file correctly regardless of the shell's default client encoding.
+**Lesson:** A UTF-8 file isn't enough — the *client connection* has its own encoding, and Windows psql doesn't default to UTF-8. Set it explicitly in the script so seeding is reproducible anywhere.
 
 ---
 

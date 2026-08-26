@@ -1,0 +1,48 @@
+# Render Blueprint — deploys all three pieces from one file.
+# In the Render dashboard: New → Blueprint → connect this repo → Deploy.
+# Docs: https://render.com/docs/blueprint-spec
+
+databases:
+  - name: cafe-compass-db
+    plan: free
+    region: ohio
+
+services:
+  # ── Express API ──────────────────────────────────────────────
+  - type: web
+    name: cafe-compass-api
+    runtime: node
+    plan: free
+    region: ohio
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cafe-compass-db
+          property: connectionString
+      - key: PGSSL
+        value: require
+      - key: NODE_ENV
+        value: production
+
+  # ── Static client (Vite build) ───────────────────────────────
+  - type: web
+    name: cafe-compass-web
+    runtime: static
+    buildCommand: cd client && npm ci && npm run build
+    staticPublishPath: client/dist
+    envVars:
+      # Point the client at the deployed API. Set this to the API's
+      # URL after the first deploy (Render fills the host once it exists).
+      - key: VITE_API_BASE
+        fromService:
+          name: cafe-compass-api
+          type: web
+          property: host
+    routes:
+      # SPA fallback — every path serves index.html so client routing works.
+      - type: rewrite
+        source: /*
+        destination: /index.html
