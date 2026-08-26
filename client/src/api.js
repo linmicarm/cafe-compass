@@ -1,11 +1,12 @@
-// Thin API layer. All calls hit the Express backend.
-// Local dev: VITE_API_BASE is unset, so calls go to '/api' and Vite proxies
-// them to :3000. Production: VITE_API_BASE is the deployed API host/URL.
+// Thin API layer. Uses VITE_API_BASE if set at build time, otherwise
+// falls back to the deployed API URL. Local dev: set VITE_API_BASE="" to
+// use the Vite proxy, or it'll hit the production API (also fine).
 function apiBase() {
   const v = import.meta.env.VITE_API_BASE;
-  if (!v) return '';
-  if (/^https?:\/\//.test(v)) return v;
-  return `https://${v}`;
+  if (v === '') return '';
+  const base = v || 'https://cafe-compass-api.onrender.com';
+  if (/^https?:\/\//.test(base)) return base;
+  return `https://${base}`;
 }
 const BASE = apiBase() + '/api';
 
