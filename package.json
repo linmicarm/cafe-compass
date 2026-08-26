@@ -13,20 +13,10 @@
     "db:setup": "node src/db/setup.js"
   },
   "dependencies": {
-
-cat > src/db/pool.js << 'EOF'
-import pg from 'pg';
-import 'dotenv/config';
-
-const { Pool } = pg;
-
-// DATABASE_URL, e.g. postgres://user:pass@localhost:5432/cafe_compass
-// Managed Postgres (Render, Neon, etc.) requires SSL; local dev does not.
-const useSSL = process.env.PGSSL === 'require' || process.env.NODE_ENV === 'production';
-
-export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: useSSL ? { rejectUnauthorized: false } : false,
-});
-
-export const query = (text, params) => pool.query(text, params);
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "pg": "^8.12.0"
+  },
+  "devDependencies": {}
+}
