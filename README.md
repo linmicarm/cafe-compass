@@ -1,11 +1,13 @@
 # Café Compass ☕🧭
 
-A café discovery API for finding cozy, wifi-friendly workspaces. Filter cafés by **vibe**, **wifi quality**, **noise level**, and **outlet availability** — then read reviews and browse curated collections like *Deep Work Spots*.
+**[▶ Live demo](https://cafe-compass-web.onrender.com/)** · A full-stack café discovery app for finding cozy, wifi-friendly workspaces. Filter cafés by **vibe**, **wifi quality**, **noise level**, and **outlet availability** — then read reviews and browse curated collections like *Deep Work Spots*.
 
-Built to demonstrate **relational modeling in Postgres**: two many-to-many joins, a one-to-many, enum-typed filter columns, and a live aggregate view — all behind a clean Express API. Seed data is hand-authored around Columbus, OH neighborhoods.
+Built to demonstrate **relational modeling in Postgres**: two many-to-many joins, a one-to-many, enum-typed filter columns, and a live aggregate view — all behind a clean Express API, with a React + Leaflet front end. Seed data is hand-authored around Columbus, OH neighborhoods.
 
-> **Stack:** React + Vite · Leaflet · Node.js · Express · PostgreSQL (`pg`)
+> **Stack:** React + Vite · Leaflet · Node.js · Express · PostgreSQL (`pg`) · deployed on Render
 > **Scope:** v1 is user-less by design — reviews and collections are global. Accounts + auth are the headline stretch feature (see *If I built it again*).
+
+> **Note:** the API runs on Render's free tier, which sleeps after inactivity — the first load after idle may take ~30s to wake.
 
 The front end is a **list-led layout**: café cards are the hero in a responsive grid, with a story sidebar (intro + filters) on the left and a companion Leaflet map on the right. The map and list are linked bidirectionally — hover a card and its pin lifts; hover a pin and its card lifts; click either and the map pans to that café, opens its popup, and scrolls the card into view. On mobile the layout collapses to a Map/List toggle.
 
@@ -138,6 +140,14 @@ Notes: the API uses SSL against managed Postgres (`PGSSL=require`), and the clie
 **Problem:** Accented café names loaded as mojibake (`cafÃ©`) on Windows.
 **Fix:** `SET client_encoding TO 'UTF8';` at the top of `seed.sql`, so psql reads the UTF-8 file correctly regardless of the shell's default client encoding.
 **Lesson:** A UTF-8 file isn't enough — the *client connection* has its own encoding, and Windows psql doesn't default to UTF-8. Set it explicitly in the script so seeding is reproducible anywhere.
+
+**Problem:** On a static host, the front end and API live on different origins, so the client couldn't just call `/api` — that resolves to the static host, which has no backend.
+**Fix:** Made the API base configurable via `VITE_API_BASE` (baked in at build time by Vite), falling back to the Vite proxy locally so `/api` still works in dev.
+**Lesson:** Vite env vars are inlined at *build* time, not read at runtime — changing the API URL means a rebuild, not a restart. Split-origin deploys need the client to know the API's absolute URL.
+
+**Problem:** Managed Postgres (Render) refused connections with `SSL/TLS required`, but forcing SSL locally against a plain dev database would break local work.
+**Fix:** Gated SSL on an env flag — `ssl: (PGSSL === 'require' || NODE_ENV === 'production') ? { rejectUnauthorized: false } : false`.
+**Lesson:** The same pool code has to serve two environments with opposite SSL needs. Drive it from config, not a hardcoded boolean.
 
 ---
 

@@ -1,4 +1,5 @@
 // Runs schema.sql then seed.sql through the pg pool — no psql binary needed.
+// Works locally and on hosts (Render, etc.) where psql isn't installed.
 //   npm run db:setup
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -11,7 +12,7 @@ const dbDir = join(here, '..', '..', 'db');
 async function run(file) {
   const sql = readFileSync(join(dbDir, file), 'utf8');
   await pool.query(sql);
-  console.log(`\u2713 ran ${file}`);
+  console.log(`✓ ran ${file}`);
 }
 
 try {
