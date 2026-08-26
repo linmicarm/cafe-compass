@@ -2,6 +2,8 @@
 
 **[▶ Live demo](https://cafe-compass-web.onrender.com/)** · A full-stack café discovery app for finding cozy, wifi-friendly workspaces. Filter cafés by **vibe**, **wifi quality**, **noise level**, and **outlet availability** — then read reviews and browse curated collections like *Deep Work Spots*.
 
+<img width="1910" height="936" alt="image" src="https://github.com/user-attachments/assets/e2a3018c-9e0a-417a-9163-b35a49937f50" />
+
 Built to demonstrate **relational modeling in Postgres**: two many-to-many joins, a one-to-many, enum-typed filter columns, and a live aggregate view — all behind a clean Express API, with a React + Leaflet front end. Seed data is hand-authored around Columbus, OH neighborhoods.
 
 > **Stack:** React + Vite · Leaflet · Node.js · Express · PostgreSQL (`pg`) · deployed on Render
